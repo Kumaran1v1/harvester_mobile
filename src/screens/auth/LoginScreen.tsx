@@ -8,10 +8,13 @@ import {
   ActivityIndicator,
   ScrollView,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { getApiBaseUrl, setApiBaseUrl } from '../../api/client';
+import { storage } from '../../services/storage';
 
 export const LoginScreen = () => {
   const insets = useSafeAreaInsets();
@@ -23,6 +26,50 @@ export const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Server Settings State
+  const [isServerModalOpen, setIsServerModalOpen] = useState(false);
+  const [serverUrl, setServerUrl] = useState(getApiBaseUrl());
+  const [testingServer, setTestingServer] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  React.useEffect(() => {
+    storage.getServerUrl().then((saved) => {
+      if (saved) setServerUrl(saved);
+    });
+  }, []);
+
+  const handleTestConnection = async () => {
+    setTestingServer(true);
+    setTestResult(null);
+    try {
+      const cleanUrl = serverUrl.trim();
+      const res = await fetch(cleanUrl.endsWith('/api') ? cleanUrl.replace(/\/api$/, '') : cleanUrl, {
+        method: 'GET',
+      });
+      if (res.status < 500) {
+        setTestResult({ ok: true, msg: 'Connected successfully to backend!' });
+      } else {
+        setTestResult({ ok: false, msg: `Server returned status: ${res.status}` });
+      }
+    } catch (e: any) {
+      setTestResult({
+        ok: false,
+        msg: `Connection failed: ${e?.message || 'Check IP and Wi-Fi connection'}`,
+      });
+    } finally {
+      setTestingServer(false);
+    }
+  };
+
+  const handleSaveServerUrl = async () => {
+    const cleanUrl = serverUrl.trim();
+    if (!cleanUrl) return;
+    await storage.saveServerUrl(cleanUrl);
+    setApiBaseUrl(cleanUrl);
+    setIsServerModalOpen(false);
+    setTestResult(null);
+  };
 
   const handleLogin = async () => {
     setErrorMessage(null);
@@ -39,7 +86,7 @@ export const LoginScreen = () => {
       const msg =
         err?.response?.data?.message ||
         err?.message ||
-        'Unable to connect to server. Check credentials.';
+        'Unable to connect to server. Check IP & credentials.';
       setErrorMessage(msg);
     } finally {
       setIsSubmitting(false);
@@ -57,7 +104,15 @@ export const LoginScreen = () => {
         <View style={styles.gridOverlay} />
       </View>
 
-      {/* Floating Theme Mode Toggle */}
+      {/* Top Floating Buttons: Server Settings (Left) & Theme (Right) */}
+      <TouchableOpacity
+        style={[styles.serverSettingsBtn, { top: Math.max(insets.top, 16) }]}
+        onPress={() => setIsServerModalOpen(true)}
+        activeOpacity={0.8}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Text style={styles.themeIcon}>⚙️</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={[styles.themeBtn, { top: Math.max(insets.top, 16) }]}
         onPress={toggleTheme}
@@ -171,10 +226,74 @@ export const LoginScreen = () => {
           <View style={styles.securityRow}>
             <Text style={styles.securityText}>🔒 256-bit Encrypted Session</Text>
             <Text style={styles.securityDot}>•</Text>
-            <Text style={styles.securityText}>Live Render API</Text>
+            <TouchableOpacity onPress={() => setIsServerModalOpen(true)}>
+              <Text style={[styles.securityText, { color: '#2dd4bf', textDecorationLine: 'underline' }]}>
+                ⚙️ Server IP
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
+
+      {/* Server Settings Modal */}
+      <Modal visible={isServerModalOpen} transparent animationType="slide" onRequestClose={() => setIsServerModalOpen(false)}>
+        <View style={styles.serverBackdrop}>
+          <View style={styles.serverModalCard}>
+            <View style={styles.serverModalHeader}>
+              <Text style={styles.serverModalTitle}>⚙️ Backend Server Address</Text>
+              <TouchableOpacity onPress={() => setIsServerModalOpen(false)} style={{ padding: 4 }}>
+                <Text style={{ color: '#94a3b8', fontSize: 18 }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.serverModalHint}>
+              Enter your backend API URL. When running on a physical phone over Wi-Fi, ensure your phone and computer are on the same Wi-Fi network.
+            </Text>
+
+            <View style={{ marginTop: 14 }}>
+              <Text style={styles.serverInputLabel}>API URL</Text>
+              <TextInput
+                style={styles.serverInput}
+                value={serverUrl}
+                onChangeText={setServerUrl}
+                placeholder="http://172.30.50.251:5000/api"
+                placeholderTextColor="#64748b"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            {testResult && (
+              <View
+                style={[
+                  styles.testResultBox,
+                  { backgroundColor: testResult.ok ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)' },
+                ]}>
+                <Text style={{ color: testResult.ok ? '#10b981' : '#ef4444', fontSize: 12, fontWeight: '700' }}>
+                  {testResult.ok ? '✓ ' : '✕ '} {testResult.msg}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.serverModalBtns}>
+              <TouchableOpacity
+                style={styles.testBtn}
+                onPress={handleTestConnection}
+                disabled={testingServer}>
+                {testingServer ? (
+                  <ActivityIndicator color="#2dd4bf" size="small" />
+                ) : (
+                  <Text style={styles.testBtnText}>⚡ Test Connection</Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.saveServerBtn} onPress={handleSaveServerUrl}>
+                <Text style={styles.saveServerBtnText}>Save & Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -220,6 +339,19 @@ const styles = StyleSheet.create({
     opacity: 0.05,
     backgroundColor: 'transparent',
   },
+  serverSettingsBtn: {
+    position: 'absolute',
+    left: 20,
+    zIndex: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   themeBtn: {
     position: 'absolute',
     right: 20,
@@ -232,6 +364,90 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  serverBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  serverModalCard: {
+    backgroundColor: '#111827',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(45, 212, 191, 0.3)',
+    padding: 20,
+  },
+  serverModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  serverModalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#f8fafc',
+  },
+  serverModalHint: {
+    fontSize: 12,
+    color: '#94a3b8',
+    marginTop: 8,
+    lineHeight: 18,
+  },
+  serverInputLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#2dd4bf',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  serverInput: {
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#1f2937',
+    color: '#ffffff',
+    paddingHorizontal: 12,
+    fontSize: 13,
+  },
+  testResultBox: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
+  },
+  serverModalBtns: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 16,
+  },
+  testBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(45, 212, 191, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  testBtnText: {
+    color: '#2dd4bf',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  saveServerBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#0d9488',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveServerBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
   },
   themeIcon: {
     fontSize: 18,

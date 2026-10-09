@@ -77,9 +77,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.cable_mobile"
+    namespace "com.harvester_mobile"
     defaultConfig {
-        applicationId "com.cable_mobile"
+        applicationId "com.harvester_mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

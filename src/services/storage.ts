@@ -44,4 +44,19 @@ export const storage = {
     await Keychain.resetGenericPassword({ service: TOKEN_SERVICE });
     await Keychain.resetGenericPassword({ service: USER_SERVICE });
   },
+
+  // Save Custom Server URL
+  async saveServerUrl(url: string): Promise<void> {
+    await Keychain.setGenericPassword('server_url', url, {
+      service: 'com.harvester.server.url',
+    });
+  },
+
+  // Retrieve Custom Server URL
+  async getServerUrl(): Promise<string | null> {
+    const creds = await Keychain.getGenericPassword({
+      service: 'com.harvester.server.url',
+    });
+    return creds ? creds.password : null;
+  },
 };

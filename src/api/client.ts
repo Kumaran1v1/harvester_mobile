@@ -3,6 +3,7 @@ import { BASE_URL } from '../config/env';
 import { storage } from '../services/storage';
 
 let inMemoryToken: string | null = null;
+let currentBaseUrl: string = BASE_URL;
 
 export const setAuthToken = (token: string | null) => {
   inMemoryToken = token;
@@ -13,20 +14,34 @@ export const setAuthToken = (token: string | null) => {
   }
 };
 
+export const setApiBaseUrl = (url: string) => {
+  currentBaseUrl = url;
+  apiClient.defaults.baseURL = url;
+};
+
+export const getApiBaseUrl = () => currentBaseUrl;
+
 export const getAuthToken = () => inMemoryToken;
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 35000, // 35 seconds to allow cloud server cold starts
+  timeout: 35000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
 });
 
-// Attach Bearer token to outgoing requests with synchronous fast-path
+// Attach Bearer token and check saved baseURL
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    // Check if custom server url was saved
+    const savedUrl = await storage.getServerUrl();
+    if (savedUrl && config.baseURL !== savedUrl) {
+      config.baseURL = savedUrl;
+      currentBaseUrl = savedUrl;
+    }
+
     let token = inMemoryToken;
     if (!token) {
       token = await storage.getToken();

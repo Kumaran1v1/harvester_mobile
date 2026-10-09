@@ -1,4 +1,4 @@
-package com.cable_mobile
+package com.harvester_mobile
 
 import android.app.Application
 import com.facebook.react.PackageList
