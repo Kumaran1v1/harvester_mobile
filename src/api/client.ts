@@ -25,7 +25,7 @@ export const getAuthToken = () => inMemoryToken;
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 35000,
+  timeout: 45000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

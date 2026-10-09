@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (credentials: LoginRequest) => {
     const res = await authApi.login(credentials);
-    if (res.success && res.token) {
+    if (res && res.token) {
       // 1. Immediately cache token in memory so all immediate subsequent API calls are authorized
       setAuthToken(res.token);
       // 2. Persist to storage

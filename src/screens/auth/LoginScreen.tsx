@@ -256,7 +256,7 @@ export const LoginScreen = () => {
                 style={styles.serverInput}
                 value={serverUrl}
                 onChangeText={setServerUrl}
-                placeholder="http://172.30.50.251:5000/api"
+                placeholder="https://harvester-web-be.onrender.com/api"
                 placeholderTextColor="#64748b"
                 autoCapitalize="none"
                 autoCorrect={false}
