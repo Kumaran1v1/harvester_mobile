@@ -1,0 +1,47 @@
+import * as Keychain from 'react-native-keychain';
+
+const TOKEN_SERVICE = 'com.harvester.auth.token';
+const USER_SERVICE = 'com.harvester.auth.user';
+
+export const storage = {
+  // Save JWT Token
+  async saveToken(token: string): Promise<void> {
+    await Keychain.setGenericPassword('auth_token', token, {
+      service: TOKEN_SERVICE,
+    });
+  },
+
+  // Retrieve JWT Token
+  async getToken(): Promise<string | null> {
+    const credentials = await Keychain.getGenericPassword({
+      service: TOKEN_SERVICE,
+    });
+    return credentials ? credentials.password : null;
+  },
+
+  // Save User Profile JSON
+  async saveUser(user: any): Promise<void> {
+    await Keychain.setGenericPassword('user_data', JSON.stringify(user), {
+      service: USER_SERVICE,
+    });
+  },
+
+  // Retrieve User Profile JSON
+  async getUser(): Promise<any | null> {
+    const credentials = await Keychain.getGenericPassword({
+      service: USER_SERVICE,
+    });
+    if (!credentials) return null;
+    try {
+      return JSON.parse(credentials.password);
+    } catch {
+      return null;
+    }
+  },
+
+  // Clear Session on Logout
+  async clear(): Promise<void> {
+    await Keychain.resetGenericPassword({ service: TOKEN_SERVICE });
+    await Keychain.resetGenericPassword({ service: USER_SERVICE });
+  },
+};
