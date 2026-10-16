@@ -2,7 +2,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { UserProfile, LoginRequest } from '../types';
 import { authApi } from '../api/authApi';
 import { storage } from '../services/storage';
-import { setAuthToken } from '../api/client';
+import apiClient, { setAuthToken } from '../api/client';
+import { getFCMToken, syncDeviceWithBackend } from '../services/notificationService';
+
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -52,6 +54,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 3. Update React context state
       setToken(res.token);
       setUser(res.user);
+
+      // 4. Sync FCM device token with backend
+      getFCMToken().then((fcmToken) => {
+        if (fcmToken) syncDeviceWithBackend(fcmToken);
+      }).catch(() => {});
     } else {
       throw new Error(res.message || 'Login failed');
     }
@@ -65,11 +72,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    try {
+      const deviceId = await storage.getDeviceId();
+      await apiClient.post('/device/unregister', { deviceId }).catch(() => {});
+    } catch {}
     setAuthToken(null);
     await storage.clear();
     setToken(null);
     setUser(null);
   };
+
 
   return (
     <AuthContext.Provider value={{ user, token, isLoading, login, logout, setUser, updateUserProfile }}>

@@ -59,4 +59,20 @@ export const storage = {
     });
     return creds ? creds.password : null;
   },
+
+  // Get or Generate unique device installation ID
+  async getDeviceId(): Promise<string> {
+    const creds = await Keychain.getGenericPassword({
+      service: 'com.harvester.device.id',
+    });
+    if (creds && creds.password) {
+      return creds.password;
+    }
+    const newId = 'inst_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now().toString(36);
+    await Keychain.setGenericPassword('device_id', newId, {
+      service: 'com.harvester.device.id',
+    });
+    return newId;
+  },
 };
+

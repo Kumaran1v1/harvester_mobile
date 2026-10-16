@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { MainTabs } from './MainTabs';
+import { navigationRef } from './navigationRef';
 
 const Stack = createNativeStackNavigator();
 
@@ -22,7 +23,7 @@ export const RootNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator id="RootStack" screenOptions={{ headerShown: false }}>
         {token ? (
           <Stack.Screen name="Main" component={MainTabs} />

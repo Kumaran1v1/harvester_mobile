@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "852883710105",
+    "project_id": "kumaran-f1005",
+    "storage_bucket": "kumaran-f1005.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:852883710105:android:a9f4d02fcc5cec57501808",
+        "android_client_info": {
+          "package_name": "com.harvester_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDu2TqnoPTcLkH-Tfp-6d4xBnWw2stG0_w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
